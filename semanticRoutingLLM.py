@@ -43,8 +43,12 @@ def detect_intent(user_query):
     # Use Gemini to classify intent
     model = genai.GenerativeModel('gemini-1.5-flash')
     response = model.generate_content(prompt)
-    # Extract the intent from Gemini's response
-    return response.text.strip().split()[0]  # Assumes intent is first word
+    detected_intent = response.text.strip().split()[0]  # Assumes intent is first word
+    
+    # Check if detected intent is in predefined intents
+    if detected_intent.lower() not in intents.keys():
+        return "Default"
+    return detected_intent
 
 def generate_response(user_query, detected_intent):
     prompt = (
@@ -66,6 +70,6 @@ if user_query:
     detected_intent = detect_intent(user_query)
     response = generate_response(user_query, detected_intent)
     response_container.markdown(f"""
-    **Detected Intent**: `{detected_intent}`  
+    **Detected Intent**: `{detected_intent}`
     **Response**: {response}
     """)
