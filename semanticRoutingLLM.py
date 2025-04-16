@@ -1,8 +1,8 @@
 import streamlit as st
-import google.generativeai as genai
+from google import genai
 
-# Configure Gemini
-genai.configure(api_key=st.secrets["GOOGLE_API_KEY"])
+# Configure Gemini client
+client = genai.Client(api_key=st.secrets["GOOGLE_API_KEY"])
 
 # Example intents and questions
 intents = {
@@ -40,15 +40,16 @@ def detect_intent(user_query):
         f"{few_shot_examples}\n\n"
         f"Q: {user_query}\nIntent:"
     )
-    # Use Gemini to classify intent
-    model = genai.GenerativeModel('gemini-1.5-flash')
-    response = model.generate_content(prompt)
-    detected_intent = response.text.strip().split()[0]  # Assumes intent is first word
     
-    # Check if detected intent is in predefined intents
-    if detected_intent.lower() not in intents.keys():
-        return "Default"
-    return detected_intent
+    # Use Gemini 2.0 Flash for classification
+    response = client.models.generate_content(
+        model='gemini-2.0-flash',
+        contents=prompt
+    )
+    detected_intent = response.text.strip().split()[0]
+    
+    # Validate detected intent
+    return detected_intent if detected_intent in intents else "Default"
 
 def generate_response(user_query, detected_intent):
     prompt = (
@@ -57,12 +58,16 @@ def generate_response(user_query, detected_intent):
         f"Intent: {detected_intent}\n"
         f"Respond helpfully and concisely."
     )
-    model = genai.GenerativeModel('gemini-1.5-flash')
-    response = model.generate_content(prompt)
+    
+    # Generate response using Gemini 2.0 Flash
+    response = client.models.generate_content(
+        model='gemini-2.0-flash',
+        contents=prompt
+    )
     return response.text
 
 # Streamlit UI
-st.title("Gemini-Only Semantic Router RAG POC")
+st.title("Gemini 2.0 Flash Semantic Router")
 user_query = st.text_input("Ask your travel question:")
 response_container = st.empty()
 
@@ -70,6 +75,6 @@ if user_query:
     detected_intent = detect_intent(user_query)
     response = generate_response(user_query, detected_intent)
     response_container.markdown(f"""
-    **Detected Intent**: `{detected_intent}`
+    **Detected Intent**: `{detected_intent}`  
     **Response**: {response}
     """)
